@@ -143,8 +143,13 @@ import cv2
 
 import tensorflow as tf
 
-# Load the model(use the appropriate path for your saved model)
-model = tf.keras.models.load_model('preprocess5_bslcnn_corehand.keras')  # Or 'cnn_model' if using SavedModel format
+
+@st.cache_resource
+def load_my_model():
+    return tf.keras.models.load_model("preprocess5_bslcnn_corehand.keras")# Or 'cnn_model' if using SavedModel format
+
+model = load_my_model()
+
 
 # Streamlit page configuration
 st.title("Camera BSL App")

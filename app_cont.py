@@ -1,14 +1,6 @@
 #usage>streamlit run app.py
 import numpy as np
 
-# Function to process the image (can be replaced with your function)
-def process_imageEG(image: np.ndarray,preloadedmdl) -> str:
-    # Dummy function: returns "bright" or "dark" based on average brightness
-    if np.mean(image) > 128:
-        return "This looks bright!"
-    else:
-        return "This looks dark!"
-
 #util
 def resize_keep_ratio_height(img, target_h,interpolationway=None):
     h, w = img.shape[:2]
@@ -26,7 +18,6 @@ from mediapipe.tasks.python import vision
 # ---------------------------------------------------------
 # 1. Load MediaPipe models (Pose + Hands)
 #src>https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker#pose_landmarker_model
-#src>
 # ---------------------------------------------------------
 
 hand_base_options = python.BaseOptions(
@@ -112,7 +103,6 @@ def preprocessimgway5(img):
     return processedimg
 
 #EVAL EXTRAS
-# Function to process the image (can be replaced with your function)
 def process_image(image: np.ndarray,preloadedmdl) -> str:
     img_array=preprocessimgway5(image)
     img_array = np.expand_dims(img_array, axis=-1)  # (100, 100, 1)
@@ -125,14 +115,7 @@ def predictwcnn(processed_image,model):
     # Make a prediction
     predictions = model.predict(processed_image)
 
-    # Get the predicted class (if it's a classification problem)
     predicted_class = np.argmax(predictions, axis=-1).item()  # Get the index of the class with the highest probability then,Convert from numpy array to scalar int
-
-    # If you're using categorical cross-entropy loss, the predictions will be a vector of probabilities(can be used if not use item())
-    #print(f"Predicted class index: {predicted_class[0]}")
-
-    # If you want to display the probability of each class (for multi-class classification)
-    #print(f"Prediction probabilities: {predictions[0]}")
     return predictions,predicted_class
 
 
@@ -146,7 +129,6 @@ import tensorflow as tf
 # Load the model(use the appropriate path for your saved model)
 model = tf.keras.models.load_model('preprocess5_bslcnn_corehand.keras')  # Or 'cnn_model' if using SavedModel format
 
-# Streamlit page configuration
 st.title("Camera BSL App")
 
 # Create placeholders for dynamic text and image update
@@ -178,17 +160,11 @@ else:
 
         # Convert BGR (OpenCV format) to RGB (PIL format)
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-        #image = Image.fromarray(frame_rgb)      # Convert to PIL image(ai suggested bs)
-
-        # Process the image and get the result
         result_percent, result = process_image(frame_rgb, model)
 
-        # Display the updated image and result
         image_placeholder.image(frame_rgb , caption="Captured Image",width='content')
         result_placeholder.write(f"Result class: {result} | Detected: {mdloutmap[result]} | Confidence: {(result_percent[0][result] * 100):.2f}%")
 
-        # Wait for a second before capturing again
         time.sleep(1)
 
 # Release the capture when done

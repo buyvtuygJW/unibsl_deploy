@@ -153,8 +153,6 @@ math-verify==0.7.0
 matplotlib==3.10.3
 matplotlib-inline==0.2.1
 mbstrdecoder==1.1.4
-mdit-py-plugins==0.4.2
-mdurl==0.1.2
 mediapipe==0.10.32
 mistune==3.1.4
 ml_dtypes==0.5.3
@@ -169,7 +167,6 @@ nodeenv==1.9.1
 notebook==7.4.7
 notebook_shim==0.2.4
 num2words==0.5.14
-numba==0.62.1
 numexpr==2.11.0
 numpy==2.2.6
 nvidia-cublas-cu12==12.6.4.1

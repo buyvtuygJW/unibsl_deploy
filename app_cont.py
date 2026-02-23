@@ -1,12 +1,20 @@
 #usage>streamlit run app.py
 import numpy as np
 
+# Function to process the image (can be replaced with your function)
+def process_imageEG(image: np.ndarray,preloadedmdl) -> str:
+	# Dummy function: returns "bright" or "dark" based on average brightness
+	if np.mean(image) > 128:
+		return "This looks bright!"
+	else:
+		return "This looks dark!"
+
 #util
 def resize_keep_ratio_height(img, target_h,interpolationway=None):
-    h, w = img.shape[:2]
-    scale = target_h / h
-    new_w = int(w * scale)
-    return cv2.resize(img, (new_w, target_h),interpolation=interpolationway)
+	h, w = img.shape[:2]
+	scale = target_h / h
+	new_w = int(w * scale)
+	return cv2.resize(img, (new_w, target_h),interpolation=interpolationway)
 
 #mediapipepreprocess part
 import cv2
@@ -18,14 +26,15 @@ from mediapipe.tasks.python import vision
 # ---------------------------------------------------------
 # 1. Load MediaPipe models (Pose + Hands)
 #src>https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker#pose_landmarker_model
+#src>
 # ---------------------------------------------------------
 
 hand_base_options = python.BaseOptions(
-    model_asset_path="hand_landmarker.task"
+	model_asset_path="hand_landmarker.task"
 )
 hand_options = vision.HandLandmarkerOptions(
-    base_options=hand_base_options,
-    running_mode=vision.RunningMode.IMAGE
+	base_options=hand_base_options,
+	running_mode=vision.RunningMode.IMAGE
 )
 hand_detector = vision.HandLandmarker.create_from_options(hand_options)
 
@@ -34,89 +43,97 @@ hand_detector = vision.HandLandmarker.create_from_options(hand_options)
 # 2. Square bounding box helper
 # ---------------------------------------------------------
 def square_bbox(points, w, h, scale=1.2):
-    pts = np.array(points)
-    x_min, y_min = pts[:,0].min(), pts[:,1].min()
-    x_max, y_max = pts[:,0].max(), pts[:,1].max()
+	pts = np.array(points)
+	x_min, y_min = pts[:,0].min(), pts[:,1].min()
+	x_max, y_max = pts[:,0].max(), pts[:,1].max()
 
-    cx = (x_min + x_max) / 2
-    cy = (y_min + y_max) / 2
-    side = max(x_max - x_min, y_max - y_min) * scale
+	cx = (x_min + x_max) / 2
+	cy = (y_min + y_max) / 2
+	side = max(x_max - x_min, y_max - y_min) * scale
 
-    x0 = int(cx - side/2)
-    y0 = int(cy - side/2)
-    x1 = int(cx + side/2)
-    y1 = int(cy + side/2)
+	x0 = int(cx - side/2)
+	y0 = int(cy - side/2)
+	x1 = int(cx + side/2)
+	y1 = int(cy + side/2)
 
-    x0 = max(0, x0)
-    y0 = max(0, y0)
-    x1 = min(w, x1)
-    y1 = min(h, y1)
+	x0 = max(0, x0)
+	y0 = max(0, y0)
+	x1 = min(w, x1)
+	y1 = min(h, y1)
 
-    # enforce square after clamping
-    side = min(x1 - x0, y1 - y0)
-    return x0, y0, x0 + side, y0 + side
+	# enforce square after clamping
+	side = min(x1 - x0, y1 - y0)
+	return x0, y0, x0 + side, y0 + side
 
 
 # ---------------------------------------------------------
 # 3. Extract keypoints from MediaPipe Tasks
 def extract_points(image):
-    h, w = image.shape[:2]
-    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
-    #mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+	h, w = image.shape[:2]
+	mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
+	#mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 
-    hand_res = hand_detector.detect(mp_image)
+	hand_res = hand_detector.detect(mp_image)
 
-    pts = []
+	pts = []
 
-    if hand_res.hand_landmarks:
-        for hand in hand_res.hand_landmarks:
-            for lm in hand:
-                pts.append((lm.x * w, lm.y * h))
-    return pts
+	if hand_res.hand_landmarks:
+		for hand in hand_res.hand_landmarks:
+			for lm in hand:
+				pts.append((lm.x * w, lm.y * h))
+	return pts
 
 
 # ---------------------------------------------------------
 # 4. Crop to square region around arms + hands
 def crop_square(image, target_size=224):
-    h, w = image.shape[:2]
-    pts = extract_points(image)
+	h, w = image.shape[:2]
+	pts = extract_points(image)
 
-    if pts:
-        x0, y0, x1, y1 = square_bbox(pts, w, h)
-        crop = image[y0:y1, x0:x1]
-    else:
-        # fallback: center square
-        side = min(w, h)
-        x0 = (w - side)//2
-        y0 = (h - side)//2
-        crop = image[y0:y0+side, x0:x0+side]
+	if pts:
+		x0, y0, x1, y1 = square_bbox(pts, w, h)
+		crop = image[y0:y1, x0:x1]
+	else:
+		# fallback: center square
+		side = min(w, h)
+		x0 = (w - side)//2
+		y0 = (h - side)//2
+		crop = image[y0:y0+side, x0:x0+side]
 
-    crop = cv2.resize(crop, (target_size, target_size))
-    return crop
+	crop = cv2.resize(crop, (target_size, target_size))
+	return crop
 
 
 TrgtIMG_SIZE=100
 def preprocessimgway5(img):
-    img =  crop_square(img, target_size=200)
-    #One shot,resize,cvt,normalize
-    processedimg=cv2.cvtColor(resize_keep_ratio_height(img , TrgtIMG_SIZE, interpolationway=cv2.INTER_AREA), cv2.COLOR_RGB2GRAY).astype("float32") / 255.0 
-    return processedimg
+	img =  crop_square(img, target_size=200)
+	#One shot,resize,cvt,normalize
+	processedimg=cv2.cvtColor(resize_keep_ratio_height(img , TrgtIMG_SIZE, interpolationway=cv2.INTER_AREA), cv2.COLOR_RGB2GRAY).astype("float32") / 255.0 
+	return processedimg
 
 #EVAL EXTRAS
+# Function to process the image (can be replaced with your function)
 def process_image(image: np.ndarray,preloadedmdl) -> str:
-    img_array=preprocessimgway5(image)
-    img_array = np.expand_dims(img_array, axis=-1)  # (100, 100, 1)
-    img_array = np.expand_dims(img_array, axis=0)  # (1, 100, 100, 1) 
-    return predictwcnn(img_array,preloadedmdl)
+	img_array=preprocessimgway5(image)
+	img_array = np.expand_dims(img_array, axis=-1)  # (100, 100, 1)
+	img_array = np.expand_dims(img_array, axis=0)  # (1, 100, 100, 1) 
+	return predictwcnn(img_array,preloadedmdl)
 
 mdloutmap={0: '0', 1: '1', 2: '10', 3: '2', 4: '3', 5: '4', 6: '5', 7: '6', 8: '7', 9: '8', 10: '9', 11: 'a', 12: 'b', 13: 'c', 14: 'd', 15: 'e', 16: 'f', 17: 'g', 18: 'i', 19: 'k', 20: 'l', 21: 'm', 22: 'n', 23: 'o', 24: 'p', 25: 'q', 26: 'r', 27: 's', 28: 't', 29: 'u', 30: 'v', 31: 'w', 32: 'x', 33: 'z'}
 
 def predictwcnn(processed_image,model):
-    # Make a prediction
-    predictions = model.predict(processed_image)
+	# Make a prediction
+	predictions = model.predict(processed_image)
 
-    predicted_class = np.argmax(predictions, axis=-1).item()  # Get the index of the class with the highest probability then,Convert from numpy array to scalar int
-    return predictions,predicted_class
+	# Get the predicted class (if it's a classification problem)
+	predicted_class = np.argmax(predictions, axis=-1).item()  # Get the index of the class with the highest probability then,Convert from numpy array to scalar int
+
+	# If you're using categorical cross-entropy loss, the predictions will be a vector of probabilities(can be used if not use item())
+	#print(f"Predicted class index: {predicted_class[0]}")
+
+	# If you want to display the probability of each class (for multi-class classification)
+	#print(f"Prediction probabilities: {predictions[0]}")
+	return predictions,predicted_class
 
 
 import streamlit as st
@@ -129,43 +146,35 @@ import tensorflow as tf
 # Load the model(use the appropriate path for your saved model)
 model = tf.keras.models.load_model('preprocess5_bslcnn_corehand.keras')  # Or 'cnn_model' if using SavedModel format
 
+# Streamlit page configuration
 st.title("Camera BSL App")
 
-# Create placeholders for dynamic text and image update
-result_placeholder = st.empty()
+import av#depended by streamlitwebrtc
+from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
 
-# Create placeholders for displaying the image and result
-image_placeholder = st.empty()
-result_placeholder = st.empty()
+class VideoTransformer(VideoProcessorBase):
+    def recv(self, frame):
+        img = frame.to_ndarray(format="bgr24")
 
-# OpenCV: Initialize camera capture (index 0 is default webcam)
-cap = cv2.VideoCapture(0)
+        # Convert to RGB for your model
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-# If camera opened successfully
-if not cap.isOpened():
-    st.error("Unable to access the camera.")
-else:
-    # Set camera resolution (optional)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        result_percent, result = process_image(img_rgb, model)
 
-    # Loop for periodic capture and processing every second
-    while True:
-        # Capture a frame from the webcam
-        ret, frame = cap.read()
+        # Draw result on frame
+        text = f"Mdl Result class: {result} | Detected sign: {mdloutmap[result]} | {result_percent[0][result]*100:.1f}%"
+        cv2.putText(img, text, (10, 20),cv2.FONT_HERSHEY_SIMPLEX,
+        0.5, # 🔥 smaller font
+         (0, 255, 0), 2)
 
-        if not ret:
-            st.error("Failed to grab frame.")
-            break
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
 
-        # Convert BGR (OpenCV format) to RGB (PIL format)
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        result_percent, result = process_image(frame_rgb, model)
+ctx =webrtc_streamer(key="gesture-demo",video_processor_factory=VideoTransformer,media_stream_constraints={"video": True, "audio": False},)
 
-        image_placeholder.image(frame_rgb , caption="Captured Image",width='content')
-        result_placeholder.write(f"Result class: {result} | Detected: {mdloutmap[result]} | Confidence: {(result_percent[0][result] * 100):.2f}%")
+#webrtc_streamer( key="raw-test", media_stream_constraints={"video": True, "audio": False}, )#POC base test
 
-        time.sleep(1)
-
-# Release the capture when done
-cap.release()
+# 🔥 THIS PART MAKES IT EXIT WHEN CAMERA STOPS
+import sys
+if ctx and ctx.state in ["STOPPED", "ENDED"]:
+    st.write("Camera stopped. Exiting script.")
+    sys.exit(0)

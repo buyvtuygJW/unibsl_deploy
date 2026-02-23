@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     libxcb1
 COPY . .
 ENV PORT=8080
-CMD ["streamlit", "run", "app_cont.py", "--server.port=8080", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "app_cont.py", "--server.port=8080", "--server.address=0.0.0.0","--browser.gatherUsageStats=false"]
 
 
 

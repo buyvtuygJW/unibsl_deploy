@@ -126,7 +126,6 @@ jsonpickle==4.1.1
 jsonpointer==3.0.0
 jsonschema==4.25.1
 jsonschema-specifications==2025.9.1
-julius==0.2.7
 jupyter==1.1.1
 jupyter-console==6.6.3
 jupyter-events==0.12.0
@@ -209,7 +208,6 @@ pytest==8.3.5
 pytest-timeout==2.4.0
 python-bidi==0.6.7
 python-dateutil==2.9.0.post0
-python-doctr==1.0.0
 python-dotenv==1.1.1
 python-engineio==4.12.2
 python-jose==3.5.0

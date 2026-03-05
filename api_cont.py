@@ -143,7 +143,7 @@ import cv2
 import tensorflow as tf
 
 
-@st.cache_resource
+#@st.cache_resource
 def load_my_model():
     return tf.keras.models.load_model("preprocess5_bslcnn_corehand.keras")# Or 'cnn_model' if using SavedModel format
 

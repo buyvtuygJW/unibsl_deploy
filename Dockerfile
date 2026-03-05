@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
 COPY . .
 
 ENV PORT=8080
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "api_cont:app", "--host", "0.0.0.0", "--port", "8080"]
 
 
 

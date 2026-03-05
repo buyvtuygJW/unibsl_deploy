@@ -1,0 +1,20 @@
+<video id="cam" autoplay playsinline></video>
+<script>
+const video = document.getElementById("cam");
+
+navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+  video.srcObject = stream;
+});
+
+const ws = new WebSocket("wss://YOUR_BACKEND/ws");
+
+ws.onopen = () => {
+  setInterval(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+    canvas.toBlob(blob => ws.send(blob), "image/jpeg", 0.7);
+  }, 1000); // 1 FPS
+};
+</script>

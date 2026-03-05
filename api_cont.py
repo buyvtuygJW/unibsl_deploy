@@ -136,7 +136,6 @@ def predictwcnn(processed_image,model):
 	return predictions,predicted_class
 
 
-import streamlit as st
 import time
 from PIL import Image
 import cv2
@@ -150,36 +149,21 @@ def load_my_model():
 
 model = load_my_model()
 
+import cv2
+import numpy as np
+from fastapi import FastAPI, WebSocket
+from fastapi.responses import HTMLResponse
 
-# Streamlit page configuration
-st.title("Camera BSL App")
+app = FastAPI()
 
-import av#depended by streamlitwebrtc
-from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
+@app.websocket("/ws")
+async def ws_endpoint(ws: WebSocket):
+    await ws.accept()
+    while True:
+        data = await ws.receive_bytes()
+        img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
 
-class VideoTransformer(VideoProcessorBase):
-    def recv(self, frame):
-        img = frame.to_ndarray(format="bgr24")
+        # run your model
+        result_percent, result = process_image(img, model)
 
-        # Convert to RGB for your model
-        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-        result_percent, result = process_image(img_rgb, model)
-
-        # Draw result on frame
-        text = f"Mdl Result class: {result} | Detected sign: {mdloutmap[result]} | {result_percent[0][result]*100:.1f}%"
-        cv2.putText(img, text, (10, 20),cv2.FONT_HERSHEY_SIMPLEX,
-        0.5, # 🔥 smaller font
-         (0, 255, 0), 2)
-
-        return av.VideoFrame.from_ndarray(img, format="bgr24")
-
-ctx =webrtc_streamer(key="gesture-demo",video_processor_factory=VideoTransformer,media_stream_constraints={"video": True, "audio": False},)
-
-#webrtc_streamer( key="raw-test", media_stream_constraints={"video": True, "audio": False}, )#POC base test
-
-# 🔥 THIS PART MAKES IT EXIT WHEN CAMERA STOPS
-import sys
-if ctx and ctx.state in ["STOPPED", "ENDED"]:
-    st.write("Camera stopped. Exiting script.")
-    sys.exit(0)
+        await ws.send_text(str(result))

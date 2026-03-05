@@ -1,12 +1,15 @@
+<!DOCTYPE html>
+<html>
+<body>
 <video id="cam" autoplay playsinline></video>
+
 <script>
 const video = document.getElementById("cam");
 
-navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-  video.srcObject = stream;
-});
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => video.srcObject = stream);
 
-const ws = new WebSocket("wss://YOUR_BACKEND/ws");
+const ws = new WebSocket("wss://" + location.host + "/ws");
 
 ws.onopen = () => {
   setInterval(() => {
@@ -17,4 +20,10 @@ ws.onopen = () => {
     canvas.toBlob(blob => ws.send(blob), "image/jpeg", 0.7);
   }, 1000); // 1 FPS
 };
+
+ws.onmessage = (msg) => {
+  console.log("Server:", msg.data);
+};
 </script>
+</body>
+</html>

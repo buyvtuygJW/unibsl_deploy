@@ -149,21 +149,35 @@ def load_my_model():
 
 model = load_my_model()
 
-import cv2
-import numpy as np
 from fastapi import FastAPI, WebSocket
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+import numpy as np
+import cv2
 
 app = FastAPI()
 
+# Serve static files (HTML, JS, CSS)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Serve the main HTML page
+@app.get("/")
+def index():
+    return FileResponse("static/index.html")
+
+
+# WebSocket endpoint for receiving frames
 @app.websocket("/ws")
-async def ws_endpoint(ws: WebSocket):
+async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
+
     while True:
         data = await ws.receive_bytes()
+
+        # Convert JPEG bytes → OpenCV image
         img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
 
-        # run your model
         result_percent, result = process_image(img, model)
-
+        # send back result
         await ws.send_text(str(result))
+

@@ -1,6 +1,47 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Webcam Stream</title>
+<style>
+body {
+    font-family: sans-serif;
+    margin: 20px;
+    background-color: #f0f0f0;
+}
+
+/* Dark mode background */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #121212;
+    }
+}
+
+/* Result text styling */
+#result {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: black; /* default for light mode */
+}
+
+/* Dark mode result text */
+@media (prefers-color-scheme: dark) {
+    #result {
+        color: white;
+    }
+}
+
+video {
+    width: 480px;
+    height: 360px;
+    border: 2px solid #333;
+    margin-bottom: 10px;
+    background-color: black;
+}
+</style>
+</head>
 <body>
+<h2>AI Webcam Detection</h2>
 <video id="cam" autoplay playsinline></video>
 <div id="result">Waiting for AI result...</div>
 
@@ -8,28 +49,54 @@
 const video = document.getElementById("cam");
 const resultDiv = document.getElementById("result");
 
+// Request webcam access
 navigator.mediaDevices.getUserMedia({ video: true })
-  .then(stream => video.srcObject = stream);
+  .then(stream => video.srcObject = stream)
+  .catch(err => console.error("Camera error:", err));
 
-const ws = new WebSocket("ws://" + location.host + "/ws");
+// Connect WebSocket to FastAPI
+const ws = new WebSocket("ws://127.0.0.1:8081/ws");
 
 ws.onopen = () => {
-  setInterval(() => {
-    if (!video.videoWidth || !video.videoHeight) return;
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext("2d").drawImage(video, 0, 0);
-    canvas.toBlob(blob => ws.send(blob), "image/jpeg", 0.7);
-  }, 1000); // 1 FPS
+    console.log("WebSocket connected");
+
+    // Wait until video metadata is loaded
+    video.onloadedmetadata = () => {
+        setInterval(() => {
+            if (!video.videoWidth || !video.videoHeight) return;
+
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0);
+
+            canvas.toBlob(blob => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(blob);
+                }
+            }, "image/jpeg", 0.7);
+        }, 1000); // send 1 frame per second
+    };
 };
 
 ws.onmessage = (msg) => {
-  resultDiv.innerText = msg.data;
+    resultDiv.innerText = msg.data;
 };
 
-ws.onerror = (err) => console.error("WebSocket error", err);
+ws.onerror = (err) => console.error("WebSocket error:", err);
 ws.onclose = () => console.log("WebSocket closed");
+
+// Optional: JS-based color adjustment (live changes)
+function updateTextColor() {
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        resultDiv.style.color = "white";
+    } else {
+        resultDiv.style.color = "black";
+    }
+}
+updateTextColor();
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateTextColor);
 </script>
 </body>
 </html>

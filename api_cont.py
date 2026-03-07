@@ -169,6 +169,7 @@ def index():
 # WebSocket endpoint for receiving frames
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
+    print("WS CONNECT ATTEMPT")
     await ws.accept()
 
     while True:
@@ -177,7 +178,7 @@ async def websocket_endpoint(ws: WebSocket):
         # Convert JPEG bytes → OpenCV image
         img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
 
-        result_percent, result = process_image(img, model)
-        # send back result
-        await ws.send_text(str(result))
-
+        predictions, predicted_class= process_image(img, model)
+        # send back result>await ws.send_text(str(result))#naive
+        confidence = predictions[0][predicted_class]
+        await ws.send_text(f"class: {predicted_class} ({confidence*100:.1f}%)")

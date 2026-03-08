@@ -55,7 +55,7 @@ navigator.mediaDevices.getUserMedia({ video: true })
   .catch(err => console.error("Camera error:", err));
 
 // Connect WebSocket to FastAPI
-const ws = new WebSocket("ws://127.0.0.1:8081/ws");
+const ws = new WebSocket("ws://127.0.0.1:8080/ws");
 
 ws.onopen = () => {
     console.log("WebSocket connected");

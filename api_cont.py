@@ -181,4 +181,4 @@ async def websocket_endpoint(ws: WebSocket):
         predictions, predicted_class= process_image(img, model)
         # send back result>await ws.send_text(str(result))#naive
         confidence = predictions[0][predicted_class]
-        await ws.send_text(f"class: {predicted_class} ({confidence*100:.1f}%)")
+        await ws.send_text(f"sign: {mdloutmap[predicted_class]}  class: {predicted_class} ({confidence*100:.1f}%)")
